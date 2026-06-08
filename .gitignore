@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual Environment
+venv/
+
+# Environment Variables
+.env
+
+# Dataset
+dataset/
+
+# Model Weights
+*.pt
+*.pth
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+
+# YOLO Runs
+runs/
+
+# Build
+dist/
+build/
