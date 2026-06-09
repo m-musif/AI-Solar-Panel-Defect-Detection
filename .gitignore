@@ -25,14 +25,16 @@ panel-solar-1/
 # OS
 .DS_Store
 
-# YOLO Prediction Outputs
+# YOLO Runs
 runs/
 
 # Uploads
-backend/uploads/
+backend/uploads/*
+!backend/uploads/.gitkeep
 
-# Prediction Images
-backend/predictions/
+# Predictions
+backend/predictions/*
+!backend/predictions/.gitkeep
 
 # Temporary Scripts
 test_predict.py
