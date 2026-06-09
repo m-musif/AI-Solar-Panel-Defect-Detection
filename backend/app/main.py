@@ -2,6 +2,12 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from ultralytics import YOLO
+from backend.app.config import (
+    MODEL_PATH,
+    UPLOAD_DIR,
+    PREDICTION_DIR,
+    ALLOWED_EXTENSIONS,
+)
 from backend.app.schemas.prediction import (
     DetectionResult,
     PredictionResponse,
@@ -20,14 +26,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-BASE_DIR = os.getcwd()
-
-MODEL_PATH = os.path.join(BASE_DIR, "backend/app/model/weights/best.pt")
-UPLOAD_DIR = os.path.join(BASE_DIR, "backend/uploads")
-PREDICTION_DIR = os.path.join(BASE_DIR, "backend/predictions")
-
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PREDICTION_DIR, exist_ok=True)
