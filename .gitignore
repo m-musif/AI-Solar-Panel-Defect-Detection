@@ -1,5 +1,6 @@
 # Python
 __pycache__/
+**/__pycache__/
 *.pyc
 
 # Virtual Environment
@@ -10,10 +11,10 @@ venv/
 
 # Dataset
 dataset/
+panel-solar-1/
 
-# Model Weights
-*.pt
-*.pth
+# Dataset Archives
+*.zip
 
 # Jupyter
 .ipynb_checkpoints/
@@ -24,8 +25,16 @@ dataset/
 # OS
 .DS_Store
 
-# YOLO Runs
+# YOLO Prediction Outputs
 runs/
+
+# Uploads
+backend/uploads/
+
+# Temporary Scripts
+test_predict.py
+scraper.py
+download_dataset.py
 
 # Build
 dist/
