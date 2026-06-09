@@ -32,7 +32,18 @@ app.mount("/predictions", StaticFiles(directory=PREDICTION_DIR), name="predictio
 
 @app.get("/")
 def home():
-    return {"message": "AI Solar Panel Defect Detection API is running"}
+    return {
+        "message": "AI Solar Panel Defect Detection API is running"
+    }
+
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "model_loaded": model is not None,
+        "model_name": os.path.basename(MODEL_PATH)
+    }
 
 
 @app.post("/predict")
@@ -40,6 +51,7 @@ async def predict(file: UploadFile = File(...)):
     file_ext = file.filename.split(".")[-1]
     unique_id = str(uuid.uuid4())
     file_name = f"{unique_id}.{file_ext}"
+
     file_path = os.path.join(UPLOAD_DIR, file_name)
 
     with open(file_path, "wb") as buffer:
