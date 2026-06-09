@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from ultralytics import YOLO
@@ -27,6 +27,8 @@ MODEL_PATH = os.path.join(BASE_DIR, "backend/app/model/weights/best.pt")
 UPLOAD_DIR = os.path.join(BASE_DIR, "backend/uploads")
 PREDICTION_DIR = os.path.join(BASE_DIR, "backend/predictions")
 
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PREDICTION_DIR, exist_ok=True)
 
@@ -53,42 +55,58 @@ def health_check():
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(file: UploadFile = File(...)):
-    file_ext = file.filename.split(".")[-1]
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+
+    file_ext = file.filename.split(".")[-1].lower()
+
+    if file_ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Allowed types: jpg, jpeg, png, webp"
+        )
+
     unique_id = str(uuid.uuid4())
     file_name = f"{unique_id}.{file_ext}"
-
     file_path = os.path.join(UPLOAD_DIR, file_name)
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    results = model(
-        file_path,
-        save=True,
-        project=PREDICTION_DIR,
-        name=unique_id,
-        exist_ok=True
-    )
+        results = model(
+            file_path,
+            save=True,
+            project=PREDICTION_DIR,
+            name=unique_id,
+            exist_ok=True
+        )
 
-    detections = []
+        detections = []
 
-    for result in results:
-        for box in result.boxes:
-            class_id = int(box.cls[0])
-            confidence = float(box.conf[0])
-            class_name = model.names[class_id]
+        for result in results:
+            for box in result.boxes:
+                class_id = int(box.cls[0])
+                confidence = float(box.conf[0])
+                class_name = model.names[class_id]
 
-            detections.append(
-                DetectionResult(
-                    class_name=class_name,
-                    confidence=round(confidence, 2)
+                detections.append(
+                    DetectionResult(
+                        class_name=class_name,
+                        confidence=round(confidence, 2)
+                    )
                 )
-            )
 
-    prediction_image = f"/predictions/{unique_id}/{file_name}"
+        prediction_image = f"/predictions/{unique_id}/{file_name}"
 
-    return PredictionResponse(
-        filename=file.filename,
-        detections=detections,
-        prediction_image=prediction_image
-    )
+        return PredictionResponse(
+            filename=file.filename,
+            detections=detections,
+            prediction_image=prediction_image
+        )
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Prediction failed: {str(error)}"
+        )
