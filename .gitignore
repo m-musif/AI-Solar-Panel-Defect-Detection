@@ -31,6 +31,9 @@ runs/
 # Uploads
 backend/uploads/
 
+# Prediction Images
+backend/predictions/
+
 # Temporary Scripts
 test_predict.py
 scraper.py

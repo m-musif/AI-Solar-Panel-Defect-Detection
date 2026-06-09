@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from ultralytics import YOLO
 import shutil
 import os
@@ -15,12 +16,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL_PATH = "backend/app/model/weights/best.pt"
-UPLOAD_DIR = "backend/uploads"
+BASE_DIR = os.getcwd()
+
+MODEL_PATH = os.path.join(BASE_DIR, "backend/app/model/weights/best.pt")
+UPLOAD_DIR = os.path.join(BASE_DIR, "backend/uploads")
+PREDICTION_DIR = os.path.join(BASE_DIR, "backend/predictions")
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(PREDICTION_DIR, exist_ok=True)
 
 model = YOLO(MODEL_PATH)
+
+app.mount("/predictions", StaticFiles(directory=PREDICTION_DIR), name="predictions")
 
 
 @app.get("/")
@@ -31,13 +38,20 @@ def home():
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     file_ext = file.filename.split(".")[-1]
-    file_name = f"{uuid.uuid4()}.{file_ext}"
+    unique_id = str(uuid.uuid4())
+    file_name = f"{unique_id}.{file_ext}"
     file_path = os.path.join(UPLOAD_DIR, file_name)
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    results = model(file_path)
+    results = model(
+        file_path,
+        save=True,
+        project=PREDICTION_DIR,
+        name=unique_id,
+        exist_ok=True
+    )
 
     detections = []
 
@@ -52,7 +66,10 @@ async def predict(file: UploadFile = File(...)):
                 "confidence": round(confidence, 2)
             })
 
+    prediction_image = f"/predictions/{unique_id}/{file_name}"
+
     return {
         "filename": file.filename,
-        "detections": detections
+        "detections": detections,
+        "prediction_image": prediction_image
     }
