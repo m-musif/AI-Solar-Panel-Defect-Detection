@@ -2,6 +2,11 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from ultralytics import YOLO
+from backend.app.schemas.prediction import (
+    DetectionResult,
+    PredictionResponse,
+    HealthResponse,
+)
 import shutil
 import os
 import uuid
@@ -37,7 +42,7 @@ def home():
     }
 
 
-@app.get("/health")
+@app.get("/health", response_model=HealthResponse)
 def health_check():
     return {
         "status": "healthy",
@@ -46,7 +51,7 @@ def health_check():
     }
 
 
-@app.post("/predict")
+@app.post("/predict", response_model=PredictionResponse)
 async def predict(file: UploadFile = File(...)):
     file_ext = file.filename.split(".")[-1]
     unique_id = str(uuid.uuid4())
@@ -73,15 +78,17 @@ async def predict(file: UploadFile = File(...)):
             confidence = float(box.conf[0])
             class_name = model.names[class_id]
 
-            detections.append({
-                "class": class_name,
-                "confidence": round(confidence, 2)
-            })
+            detections.append(
+                DetectionResult(
+                    class_name=class_name,
+                    confidence=round(confidence, 2)
+                )
+            )
 
     prediction_image = f"/predictions/{unique_id}/{file_name}"
 
-    return {
-        "filename": file.filename,
-        "detections": detections,
-        "prediction_image": prediction_image
-    }
+    return PredictionResponse(
+        filename=file.filename,
+        detections=detections,
+        prediction_image=prediction_image
+    )
